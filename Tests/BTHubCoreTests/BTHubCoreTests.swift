@@ -119,3 +119,24 @@ import Testing
         #expect(response.devices?.first?.kind == nil)
     }
 }
+
+@Suite struct KeyLinkTests {
+    @Test func linkRoundTrips() {
+        let key = NetworkKey.generate()
+        let url = NetworkKey.shareURL(for: key)
+        #expect(url.scheme == "bthub")
+        #expect(NetworkKey.key(from: url) == key)
+    }
+
+    @Test func pastedLinkOrKeyIsAccepted() {
+        let key = NetworkKey.generate()
+        #expect(NetworkKey.parse(" \(NetworkKey.shareURL(for: key).absoluteString)\n") == key)
+        #expect(NetworkKey.parse(key.lowercased()) == key)
+    }
+
+    @Test func foreignLinksAreRejected() {
+        #expect(NetworkKey.key(from: URL(string: "https://example.com/key?k=ABCDE-FGHJK-LMNPQ-RSTUV")!) == nil)
+        #expect(NetworkKey.key(from: URL(string: "bthub://other?k=ABCDE-FGHJK-LMNPQ-RSTUV")!) == nil)
+        #expect(NetworkKey.key(from: URL(string: "bthub://key?k=short")!) == nil)
+    }
+}

@@ -1,4 +1,5 @@
 import AppKit
+import BTHubCore
 import Combine
 import SwiftUI
 
@@ -12,10 +13,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var subscription: AnyCancellable?
     private var outsideClickMonitor: Any?
 
+    // Key links can arrive before didFinishLaunching, so the hub must exist by then.
+    func applicationWillFinishLaunching(_ notification: Notification) {
+        hub = Hub()
+        // `brew services` starts the binary directly, which never registers the bthub:// scheme on its own.
+        LSRegisterURL(Bundle.main.bundleURL as CFURL, true)
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         // A windowless accessory app looks idle to the system; keep it from being terminated or napped away.
         ProcessInfo.processInfo.disableAutomaticTermination("menu bar app")
-        hub = Hub()
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         statusItem.button?.target = self
@@ -29,6 +36,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         popover.contentViewController = NSHostingController(rootView: PanelView(hub: hub) { [weak self] in self?.showSettings() })
 
         if CommandLine.arguments.contains("--settings") { showSettings() }
+    }
+
+    func application(_ application: NSApplication, open urls: [URL]) {
+        guard let key = urls.lazy.compactMap(NetworkKey.key(from:)).first, key != hub.networkKey else { return }
+        NSApp.activate(ignoringOtherApps: true)
+        let alert = NSAlert()
+        alert.messageText = String(localized: "Use the network key from another Mac?")
+        alert.informativeText = hub.networkKey == nil
+            ? String(localized: "This Mac will see and control the audio devices of the Macs that use this key.")
+            : String(localized: "It replaces the current key; Macs that still use the old one lose the connection to this Mac.")
+        alert.addButton(withTitle: String(localized: "Use key"))
+        alert.addButton(withTitle: String(localized: "Cancel"))
+        if alert.runModal() == .alertFirstButtonReturn { hub.useKey(key) }
     }
 
     private func updateIcon() {

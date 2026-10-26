@@ -44,21 +44,39 @@ struct SettingsView: View {
                             NSPasteboard.general.setString(key, forType: .string)
                         }
                     }
-                    Button("Create a new key…") { form.confirmNewKey = true }
+                    HStack {
+                        ShareLink(
+                            item: NetworkKey.shareURL(for: key),
+                            message: Text("Open this link on another Mac with BT Hub to join its network.")
+                        ) {
+                            Label("Share key…", systemImage: "square.and.arrow.up")
+                        }
+                        Spacer()
+                        Button("Create a new key…") { form.confirmNewKey = true }
+                    }
                 } else {
                     Text("Create a key on the first Mac, then enter the same key on the others.")
                     Button("Create a key") { hub.useKey(NetworkKey.generate()) }
                 }
-                HStack {
-                    TextField("Key from another Mac", text: $form.enteredKey)
-                        .font(.system(.body, design: .monospaced))
-                    Button("Use") {
-                        if let key = NetworkKey.normalize(form.enteredKey) {
-                            hub.useKey(key)
-                            form.enteredKey = ""
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Key from another Mac")
+                    HStack {
+                        TextField("Key from another Mac", text: $form.enteredKey, prompt: Text(verbatim: "XXXXX-XXXXX-XXXXX-XXXXX"))
+                            .labelsHidden()
+                            .textFieldStyle(.roundedBorder)
+                            .font(.system(.body, design: .monospaced))
+                            .frame(maxWidth: .infinity)
+                        Button("Use") {
+                            if let key = NetworkKey.parse(form.enteredKey) {
+                                hub.useKey(key)
+                                form.enteredKey = ""
+                            }
                         }
+                        .disabled(NetworkKey.parse(form.enteredKey) == nil)
                     }
-                    .disabled(NetworkKey.normalize(form.enteredKey) == nil)
+                    Text("Paste the key or a key link, or just open a link shared from another Mac.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
             } header: {
                 Text("Network key")
@@ -68,7 +86,7 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 520, height: 440)
+        .frame(width: 540, height: 500)
         .onAppear { form.name = hub.name }
         .confirmationDialog("Create a new key?", isPresented: $form.confirmNewKey) {
             Button("Create", role: .destructive) { hub.useKey(NetworkKey.generate()) }

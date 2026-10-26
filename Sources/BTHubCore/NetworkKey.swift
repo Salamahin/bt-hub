@@ -26,6 +26,29 @@ public enum NetworkKey {
         return format(symbols)
     }
 
+    /// A link that hands the key to another Mac: `bthub://key?k=…`, opened by BT Hub there.
+    public static func shareURL(for key: String) -> URL {
+        var components = URLComponents()
+        components.scheme = "bthub"
+        components.host = "key"
+        components.queryItems = [URLQueryItem(name: "k", value: key)]
+        return components.url!
+    }
+
+    public static func key(from url: URL) -> String? {
+        guard url.scheme == "bthub", url.host == "key",
+              let value = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first(where: { $0.name == "k" })?.value
+        else { return nil }
+        return normalize(value)
+    }
+
+    /// Accepts either the key itself or a pasted key link.
+    public static func parse(_ input: String) -> String? {
+        let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let url = URL(string: trimmed), url.scheme == "bthub" { return key(from: url) }
+        return normalize(trimmed)
+    }
+
     /// Fresh parameters for one listener or connection; NWParameters must not be shared between them.
     public static func parameters(key: String) -> NWParameters {
         let symbols = Data(key.filter { $0 != "-" }.utf8)

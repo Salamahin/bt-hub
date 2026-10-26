@@ -39,3 +39,13 @@
 "Create a new key?" = "Создать новый ключ?";
 "Create" = "Создать";
 "Other Macs lose the connection to this one until the new key is entered on them." = "Остальные маки потеряют связь с этим, пока на них не введут новый ключ.";
+
+/* Sharing the key */
+"Share key…" = "Поделиться ключом…";
+"Open this link on another Mac with BT Hub to join its network." = "Откройте эту ссылку на другом Mac с BT Hub, чтобы подключить его к сети.";
+"Paste the key or a key link, or just open a link shared from another Mac." = "Вставьте ключ или ссылку на ключ — или просто откройте ссылку, присланную с другого Mac.";
+"Use the network key from another Mac?" = "Использовать ключ сети с другого Mac?";
+"This Mac will see and control the audio devices of the Macs that use this key." = "Этот Mac будет видеть аудиоустройства маков с этим ключом и управлять ими.";
+"It replaces the current key; Macs that still use the old one lose the connection to this Mac." = "Он заменит текущий ключ; маки со старым ключом потеряют связь с этим Mac.";
+"Use key" = "Использовать ключ";
+"Cancel" = "Отмена";

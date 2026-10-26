@@ -23,12 +23,16 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
     <key>CFBundleDisplayName</key><string>BT Hub</string>
     <key>CFBundleExecutable</key><string>BTHub</string>
     <key>CFBundlePackageType</key><string>APPL</string>
-    <key>CFBundleShortVersionString</key><string>1.2.0</string>
-    <key>CFBundleVersion</key><string>3</string>
+    <key>CFBundleShortVersionString</key><string>1.3.0</string>
+    <key>CFBundleVersion</key><string>4</string>
     <key>LSMinimumSystemVersion</key><string>14.0</string>
     <key>LSUIElement</key><true/>
     <key>NSBluetoothAlwaysUsageDescription</key><string>BT Hub connects and disconnects audio devices on this Mac.</string>
     <key>NSLocalNetworkUsageDescription</key><string>BT Hub finds your other devices on the network to move audio devices between them.</string>
+    <key>CFBundleURLTypes</key><array><dict>
+        <key>CFBundleURLName</key><string>dev.salamahin.bthub.key</string>
+        <key>CFBundleURLSchemes</key><array><string>bthub</string></array>
+    </dict></array>
     <key>NSBonjourServices</key><array><string>_bthub._tcp</string></array>
 </dict>
 </plist>
