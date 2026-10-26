@@ -68,7 +68,10 @@ private struct DeviceRow: View {
             } else if here {
                 Button("Disconnect") { Task { await hub.disconnect(device.address, from: peer.id) } }
             } else {
-                Button("Move here") { Task { await hub.move(device.address, to: peer.id) } }
+                // Move only makes sense when another Mac has it; otherwise this just connects it.
+                Button(device.connectedOn.isEmpty ? LocalizedStringKey("Connect") : LocalizedStringKey("Move here")) {
+                    Task { await hub.move(device.address, to: peer.id) }
+                }
             }
         }
     }
