@@ -2,7 +2,8 @@ import AppKit
 import BTHubCore
 import SwiftUI
 
-/// The panel under the status-bar icon: each Mac with the audio devices paired to it.
+/// The panel under the status-bar icon: each Mac with the audio devices it holds or can take over.
+/// Devices connected nowhere are left out; the panel is only for moving them between Macs.
 struct PanelView: View {
     @ObservedObject var hub: Hub
     let openSettings: () -> Void
@@ -43,7 +44,9 @@ private struct MacSection: View {
             Text(verbatim: peer.title)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            ForEach(hub.devices.filter { device in peer.devices.contains { $0.address == device.address } }) { device in
+            ForEach(hub.devices.filter { device in
+                !device.connectedOn.isEmpty && peer.devices.contains { $0.address == device.address }
+            }) { device in
                 DeviceRow(hub: hub, device: device, peer: peer)
             }
         }
@@ -68,10 +71,7 @@ private struct DeviceRow: View {
             } else if here {
                 Button("Disconnect") { Task { await hub.disconnect(device.address, from: peer.id) } }
             } else {
-                // Move only makes sense when another Mac has it; otherwise this just connects it.
-                Button(device.connectedOn.isEmpty ? LocalizedStringKey("Connect") : LocalizedStringKey("Move here")) {
-                    Task { await hub.move(device.address, to: peer.id) }
-                }
+                Button("Move here") { Task { await hub.move(device.address, to: peer.id) } }
             }
         }
     }

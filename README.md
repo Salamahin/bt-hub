@@ -3,9 +3,9 @@
 A menu bar app that shows, Mac by Mac, which Bluetooth audio devices are connected where — and moves or
 disconnects them with one click.
 
-- The panel lists each Mac on your network with the Bluetooth audio devices paired to it (headphones, speakers,
-  headsets); nothing is hard-coded.
-- A device is on one Mac at a time. **Connect** connects a free device; **Move here** takes it from the Mac that has it. If a multipoint device connects to two Macs by itself, the Mac it was last moved to — or the one that had
+- The panel lists each Mac on your network with the Bluetooth audio devices (headphones, speakers, headsets) that
+  are connected somewhere; nothing is hard-coded.
+- A device is on one Mac at a time. **Move here** takes it from the Mac that has it; **Disconnect** drops it. If a multipoint device connects to two Macs by itself, the Mac it was last moved to — or the one that had
   it first — keeps it and the others let go. **Disconnect** drops it from a Mac.
 - **Adding a Mac**: install BT Hub on it and press **Join** next to a Mac already in the network. Both Macs show
   the same six-digit code; allow the join on the member and the network key travels over, encrypted (X25519 key
