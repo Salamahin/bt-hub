@@ -2,20 +2,13 @@ import Foundation
 
 /// Settings every peer shares; the copy with the latest `updatedAt` wins.
 public struct SharedSettings: Codable, Equatable, Sendable {
-    /// Devices allowed on several peers at once. Every other device is exclusive: one peer at a time.
-    public var multipoint: Set<String>
     /// Device address → the peer that should keep it when several hold it.
     public var owners: [String: String]
     public var updatedAt: Double
 
-    public init(multipoint: Set<String> = [], owners: [String: String] = [:], updatedAt: Double = 0) {
-        self.multipoint = multipoint
+    public init(owners: [String: String] = [:], updatedAt: Double = 0) {
         self.owners = owners
         self.updatedAt = updatedAt
-    }
-
-    public func isExclusive(_ address: String) -> Bool {
-        !multipoint.contains(address)
     }
 
     /// The newer of the two copies.
@@ -24,8 +17,9 @@ public struct SharedSettings: Codable, Equatable, Sendable {
     }
 }
 
+/// A device stays on one peer at a time; these pick which peer keeps it.
 public enum Exclusivity {
-    /// The peer that keeps an exclusive device: its owner if the owner holds it, otherwise a stable pick.
+    /// The peer that keeps the device: its owner if the owner holds it, otherwise a stable pick.
     public static func winner(holders: [String], owner: String?) -> String? {
         if let owner, holders.contains(owner) { return owner }
         return holders.min()

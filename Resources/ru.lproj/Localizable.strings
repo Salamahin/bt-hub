@@ -8,9 +8,7 @@
 "Disconnect" = "Отключить";
 "Connect" = "Подключить";
 "Move" = "Перенести";
-"Disconnect everywhere" = "Отключить везде";
 "This Mac" = "Этот Mac";
-"Only one Mac at a time" = "Только к одному Mac";
 
 /* Errors */
 "the device did not respond (code %@)" = "устройство не ответило (код %@)";

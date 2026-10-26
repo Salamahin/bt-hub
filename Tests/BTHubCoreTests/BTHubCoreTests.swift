@@ -101,16 +101,15 @@ import Testing
     }
 
     @Test func newerSettingsWin() {
-        let old = SharedSettings(multipoint: ["X"], updatedAt: 1)
+        let old = SharedSettings(owners: ["X": "b"], updatedAt: 1)
         let new = SharedSettings(owners: ["X": "a"], updatedAt: 2)
         #expect(old.merged(with: new) == new)
         #expect(new.merged(with: old) == new)
     }
 
-    @Test func devicesAreExclusiveByDefault() {
-        let settings = SharedSettings(multipoint: ["X"])
-        #expect(!settings.isExclusive("X"))
-        #expect(settings.isExclusive("Y"))
+    @Test func settingsFromVersionWithMultipointDecode() throws {
+        let json = #"{"multipoint":["X"],"owners":{"X":"a"},"updatedAt":3}"#
+        #expect(try JSONDecoder().decode(SharedSettings.self, from: Data(json.utf8)) == SharedSettings(owners: ["X": "a"], updatedAt: 3))
     }
 
     @Test func responseFromOlderPeerDecodes() throws {

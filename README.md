@@ -4,12 +4,10 @@ A menu bar app that shows where each of your Bluetooth audio devices is connecte
 the same network — and moves or disconnects them with one click.
 
 - Lists every paired Bluetooth audio device (headphones, speakers, headsets); nothing is hard-coded.
-- **Connect / Move** connects a device to the chosen Mac; every other Mac lets go of it first.
-- **Disconnect** drops it from one Mac, **Disconnect everywhere** from all of them.
-- **Only one Mac at a time** (on by default, per device): if a multipoint device connects to two Macs by itself,
-  the Mac it was last moved to — or the one that had it first — keeps it and the others let go. Turn it off to
-  allow several Macs at once; **Connect** then adds a Mac without dropping the others. The setting is shared by
-  all Macs.
+- A device is on one Mac at a time. **Connect / Move** connects it to the chosen Mac; every other Mac lets go of it
+  first. If a multipoint device connects to two Macs by itself, the Mac it was last moved to — or the one that had
+  it first — keeps it and the others let go.
+- **Disconnect** drops it from a Mac.
 - Macs find each other over Bonjour. They talk over TLS 1.2 with a pre-shared key: a device without the key can
   neither read the traffic nor send commands. The key lives in the login keychain.
 - English and Russian, following the system language.

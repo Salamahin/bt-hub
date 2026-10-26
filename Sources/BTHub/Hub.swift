@@ -98,10 +98,6 @@ final class Hub: ObservableObject {
         peers.first { $0.id == id }
     }
 
-    func isExclusive(_ address: String) -> Bool {
-        settings.isExclusive(address)
-    }
-
     // MARK: - Actions
 
     /// Connects the device to `target` alone: every other peer lets go of it first.
@@ -117,35 +113,13 @@ final class Hub: ObservableObject {
         }
     }
 
-    /// Adds `target` without touching the other peers; for devices allowed on several at once.
-    func connect(_ address: String, to target: String) async {
-        await act(on: address) {
-            try await self.call(target, .connect(address), timeout: Self.connectTimeout)
-        }
-    }
-
     func disconnect(_ address: String, from peerID: String) async {
         await act(on: address) {
             try await self.call(peerID, .disconnect(address), timeout: Self.statusTimeout)
         }
     }
 
-    func disconnectEverywhere(_ address: String) async {
-        await act(on: address) {
-            for holder in self.holders(of: address) {
-                try await self.call(holder, .disconnect(address), timeout: Self.statusTimeout)
-            }
-        }
-    }
-
     // MARK: - Settings
-
-    func setExclusive(_ address: String, _ exclusive: Bool) {
-        var updated = settings
-        if exclusive { updated.multipoint.remove(address) } else { updated.multipoint.insert(address) }
-        publish(updated)
-        if exclusive { Task { await reconcile() } }
-    }
 
     func useKey(_ key: String) {
         Keychain.save(key)
@@ -272,13 +246,13 @@ final class Hub: ObservableObject {
         await reconcile()
     }
 
-    /// Keeps every exclusive device on a single peer. Only the peer that should keep it acts,
+    /// Keeps every device on a single peer, e.g. when a multipoint device connects to two Macs by itself. Only the peer that should keep it acts,
     /// so peers never fight over a device.
     private func reconcile() async {
         guard !reconciling else { return }
         reconciling = true
         defer { reconciling = false }
-        for device in devices where settings.isExclusive(device.address) && !busy.contains(device.address) {
+        for device in devices where !busy.contains(device.address) {
             let holders = device.connectedOn
             if holders.count == 1 {
                 // Remember who had it alone, so that peer keeps it when another one grabs it too.
