@@ -16,6 +16,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // Key links can arrive before didFinishLaunching, so the hub must exist by then.
     func applicationWillFinishLaunching(_ notification: Notification) {
         hub = Hub()
+        hub.approveJoin = { [weak self] peer, code in self?.askToApprove(peer, code: code) ?? false }
         // `brew services` starts the binary directly, which never registers the bthub:// scheme on its own.
         LSRegisterURL(Bundle.main.bundleURL as CFURL, true)
     }
@@ -33,7 +34,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // On macOS 27 MenuBarAgent hands the app focus for ~0.1 s per click and takes it back, so a .transient
         // popover closes at once. Close it ourselves on clicks elsewhere instead.
         popover.behavior = .applicationDefined
-        popover.contentViewController = NSHostingController(rootView: PanelView(hub: hub) { [weak self] in self?.showSettings() })
+        let panel = NSHostingController(rootView: PanelView(hub: hub) { [weak self] in self?.showSettings() })
+        panel.sizingOptions = [.preferredContentSize]
+        popover.contentViewController = panel
 
         if CommandLine.arguments.contains("--settings") { showSettings() }
     }
@@ -49,6 +52,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         alert.addButton(withTitle: String(localized: "Use key"))
         alert.addButton(withTitle: String(localized: "Cancel"))
         if alert.runModal() == .alertFirstButtonReturn { hub.useKey(key) }
+    }
+
+    /// Shows the joining Mac's name and code; the user allows it only if that Mac shows the same code.
+    private func askToApprove(_ peer: PeerInfo, code: String) -> Bool {
+        closePanel()
+        NSApp.activate(ignoringOtherApps: true)
+        let alert = NSAlert()
+        alert.messageText = String(localized: "\(peer.name) wants to join your BT Hub network")
+        alert.informativeText = String(localized: "Allow it only if \(peer.name) shows this code:")
+        let label = NSTextField(labelWithString: code)
+        label.font = .monospacedSystemFont(ofSize: 28, weight: .semibold)
+        alert.accessoryView = label
+        alert.addButton(withTitle: String(localized: "Allow"))
+        alert.addButton(withTitle: String(localized: "Deny"))
+        return alert.runModal() == .alertFirstButtonReturn
     }
 
     private func updateIcon() {

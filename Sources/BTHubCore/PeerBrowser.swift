@@ -1,7 +1,8 @@
 import Foundation
 import Network
 
-/// Finds other BT Hub instances on the local network over Bonjour.
+/// Finds other BT Hub instances on the local network over Bonjour: network members by default,
+/// or every Mac that can be joined with `type: Pairing.serviceType`.
 public final class PeerBrowser: @unchecked Sendable {
     public struct Found: Hashable, Sendable {
         public let id: String
@@ -13,10 +14,10 @@ public final class PeerBrowser: @unchecked Sendable {
     private let queue = DispatchQueue(label: "bthub.browser")
 
     /// `onChange` runs on the main queue with every peer except `ownID`.
-    public init(ownID: String, onChange: @escaping @MainActor ([Found]) -> Void) {
+    public init(ownID: String, type: String = serviceType, onChange: @escaping @MainActor ([Found]) -> Void) {
         let parameters = NWParameters.tcp
         parameters.includePeerToPeer = false
-        browser = NWBrowser(for: .bonjourWithTXTRecord(type: serviceType, domain: nil), using: parameters)
+        browser = NWBrowser(for: .bonjourWithTXTRecord(type: type, domain: nil), using: parameters)
         browser.browseResultsChangedHandler = { results, _ in
             var byID: [String: Found] = [:]
             for result in results {

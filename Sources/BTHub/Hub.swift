@@ -39,6 +39,17 @@ final class Hub: ObservableObject {
     @Published private(set) var networkKey: String?
     @Published private(set) var name: String
     @Published private(set) var settings: SharedSettings
+    /// Every Mac running BT Hub nearby, members or not.
+    @Published private(set) var nearby: [PeerBrowser.Found] = []
+    @Published private(set) var joining: Joining?
+
+    struct Joining: Equatable {
+        let name: String
+        var code: String?
+    }
+
+    /// Asks the user whether a Mac showing `code` may join; set by the app delegate.
+    var approveJoin: ((PeerInfo, String) -> Bool)?
 
     let ownID: String
     private let bluetooth = Bluetooth()
@@ -46,6 +57,8 @@ final class Hub: ObservableObject {
     private var browser: PeerBrowser?
     private var timer: Timer?
     private var reconciling = false
+    private var pairingServer: PairingServer?
+    private var pairingBrowser: PeerBrowser?
 
     init() {
         let defaults = UserDefaults.standard
@@ -61,6 +74,7 @@ final class Hub: ObservableObject {
         peers = [Peer(id: ownID, name: name, isLocal: true, endpoint: nil, reachable: true, devices: [])]
 
         startNetwork()
+        startPairing()
         timer = Timer.scheduledTimer(withTimeInterval: Self.refreshInterval, repeats: true) { [weak self] _ in
             Task { @MainActor in await self?.refresh() }
         }
@@ -98,6 +112,55 @@ final class Hub: ObservableObject {
         peers.first { $0.id == id }
     }
 
+    /// Macs nearby that are not in this network yet (or use another key).
+    var joinable: [PeerBrowser.Found] {
+        nearby.filter { found in !peers.contains { $0.id == found.id && $0.reachable } }
+    }
+
+    // MARK: - Joining
+
+    /// Joins the network of `member`: both Macs show a code and the user allows it on the member.
+    func join(_ member: PeerBrowser.Found) async {
+        guard joining == nil else { return }
+        joining = Joining(name: member.name)
+        lastError = nil
+        do {
+            let key = try await Pairing.join(member.endpoint, as: PeerInfo(id: ownID, name: name), timeout: 120) { code in
+                await MainActor.run { self.joining?.code = code }
+            }
+            useKey(key)
+        } catch {
+            lastError = "\(member.name): \(error.localizedDescription)"
+        }
+        joining = nil
+    }
+
+    private func startPairing() {
+        let me = PeerInfo(id: ownID, name: name)
+        do {
+            let server = try PairingServer(advertiseAs: me) { [weak self] peer, code in
+                await self?.approve(peer, code: code)
+            }
+            pairingServer = server
+            Task { try? await server.start() }
+        } catch {
+            lastError = String(localized: "Could not open a network port: \(error.localizedDescription)")
+        }
+        let browser = PeerBrowser(ownID: ownID, type: Pairing.serviceType) { [weak self] found in
+            guard let self, found != self.nearby else { return }
+            self.nearby = found
+        }
+        pairingBrowser = browser
+        browser.start()
+    }
+
+    private func approve(_ peer: PeerInfo, code: String) -> String? {
+        guard approveJoin?(peer, code) == true else { return nil }
+        // The first Mac to let another one in starts the network.
+        if networkKey == nil { useKey(NetworkKey.generate()) }
+        return networkKey
+    }
+
     // MARK: - Actions
 
     /// Connects the device to `target` alone: every other peer lets go of it first.
@@ -133,6 +196,9 @@ final class Hub: ObservableObject {
         name = trimmed
         UserDefaults.standard.set(trimmed, forKey: "name")
         restartNetwork()
+        pairingServer?.stop()
+        pairingBrowser?.stop()
+        startPairing()
     }
 
     // MARK: - Internals

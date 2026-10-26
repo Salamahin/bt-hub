@@ -1,13 +1,9 @@
 /* Panel */
 "No paired audio devices" = "Нет спаренных аудиоустройств";
-"Network is not set up — only this Mac's devices are shown" = "Сеть не настроена — видны только устройства этого Mac";
-"Online: %@" = "В сети: %@";
-"No connection: %@ (different key?)" = "Нет связи: %@ (другой ключ?)";
 "Settings…" = "Настройки…";
 "Quit" = "Выйти";
 "Disconnect" = "Отключить";
 "Connect" = "Подключить";
-"Move" = "Перенести";
 "This Mac" = "Этот Mac";
 
 /* Errors */
@@ -49,3 +45,23 @@
 "It replaces the current key; Macs that still use the old one lose the connection to this Mac." = "Он заменит текущий ключ; маки со старым ключом потеряют связь с этим Mac.";
 "Use key" = "Использовать ключ";
 "Cancel" = "Отмена";
+
+/* Sections by Mac */
+"Not paired with this Mac" = "Не спарено с этим Mac";
+"Connected" = "Подключено";
+"On %@" = "Сейчас на: %@";
+"Not connected" = "Не подключено";
+"Move here" = "Перенести сюда";
+
+/* Joining */
+"Macs nearby" = "Маки поблизости";
+"Join" = "Подключиться";
+"Join pulls this Mac into that Mac's network; you confirm a code there." = "Этот Mac войдёт в сеть выбранного; там нужно будет подтвердить код.";
+"To add another Mac, install BT Hub on it and press Join there." = "Чтобы добавить другой Mac, установите на него BT Hub и нажмите там «Подключиться».";
+"Allow the join on %@. It must show the code:" = "Разрешите подключение на %@. Там должен быть этот код:";
+"Connecting to %@…" = "Подключение к %@…";
+"%@ wants to join your BT Hub network" = "%@ хочет подключиться к вашей сети BT Hub";
+"Allow it only if %@ shows this code:" = "Разрешайте, только если на %@ показан этот код:";
+"Allow" = "Разрешить";
+"Deny" = "Отклонить";
+"the other Mac declined" = "другой Mac отклонил подключение";

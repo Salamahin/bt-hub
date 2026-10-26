@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 import Testing
 @testable import BTHubCore
@@ -138,5 +139,60 @@ import Testing
         #expect(NetworkKey.key(from: URL(string: "https://example.com/key?k=ABCDE-FGHJK-LMNPQ-RSTUV")!) == nil)
         #expect(NetworkKey.key(from: URL(string: "bthub://other?k=ABCDE-FGHJK-LMNPQ-RSTUV")!) == nil)
         #expect(NetworkKey.key(from: URL(string: "bthub://key?k=short")!) == nil)
+    }
+}
+
+@Suite(.serialized) struct PairingTests {
+    final class Box<T>: @unchecked Sendable {
+        private let lock = NSLock()
+        private var stored: T?
+        var value: T? {
+            get { lock.lock(); defer { lock.unlock() }; return stored }
+            set { lock.lock(); stored = newValue; lock.unlock() }
+        }
+    }
+
+    static let joiner = PeerInfo(id: "new", name: "New Mac")
+
+    @Test func approvedJoinReceivesTheKeyAndBothSeeTheSameCode() async throws {
+        let key = NetworkKey.generate()
+        let memberCode = Box<String>()
+        let joinerCode = Box<String>()
+        let askedAbout = Box<PeerInfo>()
+        let server = try PairingServer(advertiseAs: nil) { peer, code in
+            askedAbout.value = peer
+            memberCode.value = code
+            return key
+        }
+        try await server.start()
+        defer { server.stop() }
+
+        let received = try await Pairing.join(.hostPort(host: "127.0.0.1", port: .init(rawValue: server.port!)!), as: Self.joiner, timeout: 5) { code in
+            joinerCode.value = code
+        }
+        #expect(received == key)
+        #expect(askedAbout.value == Self.joiner)
+        #expect(joinerCode.value != nil)
+        #expect(joinerCode.value == memberCode.value)
+        #expect(joinerCode.value?.count == 7) // "123 456"
+    }
+
+    @Test func declinedJoinThrows() async throws {
+        let server = try PairingServer(advertiseAs: nil) { _, _ in nil }
+        try await server.start()
+        defer { server.stop() }
+
+        await #expect(throws: Pairing.Rejected.self) {
+            _ = try await Pairing.join(.hostPort(host: "127.0.0.1", port: .init(rawValue: server.port!)!), as: Self.joiner, timeout: 5) { _ in }
+        }
+    }
+
+    @Test func codesDifferBetweenSessions() throws {
+        func code() throws -> String {
+            let a = Curve25519.KeyAgreement.PrivateKey(), b = Curve25519.KeyAgreement.PrivateKey()
+            return try Pairing.Secrets(mine: a, theirs: b.publicKey.rawRepresentation, initiator: a.publicKey.rawRepresentation, responder: b.publicKey.rawRepresentation).code
+        }
+        let codes = try (0..<5).map { _ in try code() }
+        #expect(Set(codes).count > 1)
     }
 }

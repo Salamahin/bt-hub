@@ -2,37 +2,30 @@ import AppKit
 import BTHubCore
 import SwiftUI
 
-/// The panel under the status-bar icon: every audio device with a row per peer.
+/// The panel under the status-bar icon: a section per Mac listing every audio device, then Macs that can join.
 struct PanelView: View {
     @ObservedObject var hub: Hub
     let openSettings: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            let devices = hub.devices
-            if devices.isEmpty {
-                Text("No paired audio devices").foregroundStyle(.secondary)
-            }
-            ForEach(devices) { device in
-                DeviceCard(hub: hub, device: device)
-            }
-
-            VStack(alignment: .leading, spacing: 4) {
-                if hub.networkKey == nil {
-                    Text("Network is not set up — only this Mac's devices are shown")
-                } else {
-                    Text("Online: \(hub.peers.filter(\.reachable).map(\.title).joined(separator: ", "))")
-                    let offline = hub.peers.filter { !$0.reachable }
-                    if !offline.isEmpty {
-                        Text("No connection: \(offline.map(\.name).joined(separator: ", ")) (different key?)")
+            ScrollView {
+                VStack(alignment: .leading, spacing: 12) {
+                    ForEach(hub.peers.filter(\.reachable)) { peer in
+                        MacSection(hub: hub, peer: peer)
                     }
-                }
-                if let error = hub.lastError {
-                    Text(verbatim: "⚠︎ " + error).foregroundStyle(.red)
+                    NearbySection(hub: hub)
                 }
             }
-            .font(.caption)
-            .foregroundStyle(.secondary)
+            .frame(maxHeight: 560)
+            .fixedSize(horizontal: false, vertical: true)
+
+            if let error = hub.lastError {
+                Text(verbatim: "⚠︎ " + error)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
 
             Divider()
             HStack {
@@ -42,43 +35,79 @@ struct PanelView: View {
             }
         }
         .padding(16)
-        .frame(width: 340)
+        .frame(width: 360)
     }
 }
 
-private struct DeviceCard: View {
+private struct MacSection: View {
     @ObservedObject var hub: Hub
-    let device: Hub.AudioDevice
+    let peer: Hub.Peer
 
     var body: some View {
-        let busy = hub.busy.contains(device.address)
         VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Image(systemName: icon)
-                Text(verbatim: device.name).bold()
-                Spacer()
-                if busy { ProgressView().controlSize(.small) }
-            }
-            ForEach(hub.peers.filter(\.reachable)) { peer in
-                let connected = device.connectedOn.contains(peer.id)
-                HStack {
-                    Image(systemName: connected ? "checkmark.circle.fill" : "circle")
-                        .foregroundStyle(connected ? Color.green : Color.secondary)
-                    Text(verbatim: peer.title)
-                    Spacer()
-                    if connected {
-                        Button("Disconnect") { Task { await hub.disconnect(device.address, from: peer.id) } }
-                    } else {
-                        Button(device.connectedOn.isEmpty ? LocalizedStringKey("Connect") : LocalizedStringKey("Move")) {
-                            Task { await hub.move(device.address, to: peer.id) }
-                        }
-                    }
+            HStack(spacing: 6) {
+                Image(systemName: "laptopcomputer")
+                Text(verbatim: peer.title).bold()
+                if peer.isLocal {
+                    Text(verbatim: peer.name).foregroundStyle(.secondary).lineLimit(1)
                 }
-                .disabled(busy)
+            }
+            let devices = hub.devices
+            if devices.isEmpty {
+                Text("No paired audio devices").font(.caption).foregroundStyle(.secondary)
+            }
+            ForEach(devices) { device in
+                DeviceRow(hub: hub, device: device, peer: peer)
             }
         }
         .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(RoundedRectangle(cornerRadius: 10).fill(Color.primary.opacity(0.06)))
+    }
+}
+
+private struct DeviceRow: View {
+    @ObservedObject var hub: Hub
+    let device: Hub.AudioDevice
+    let peer: Hub.Peer
+
+    var body: some View {
+        let paired = peer.devices.contains { $0.address == device.address }
+        let here = device.connectedOn.contains(peer.id)
+        let elsewhere = device.connectedOn.filter { $0 != peer.id }.compactMap { hub.peer($0)?.title }
+        HStack {
+            Image(systemName: icon)
+                .foregroundStyle(here ? Color.green : Color.secondary)
+                .frame(width: 18)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(verbatim: device.name).lineLimit(1)
+                Text(status(paired: paired, here: here, elsewhere: elsewhere))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+            Spacer()
+            if hub.busy.contains(device.address) {
+                ProgressView().controlSize(.small)
+            } else if paired {
+                if here {
+                    Button("Disconnect") { Task { await hub.disconnect(device.address, from: peer.id) } }
+                } else {
+                    Button(elsewhere.isEmpty ? LocalizedStringKey("Connect") : LocalizedStringKey("Move here")) {
+                        Task { await hub.move(device.address, to: peer.id) }
+                    }
+                }
+            }
+        }
+        .opacity(paired ? 1 : 0.5)
+        .disabled(hub.busy.contains(device.address))
+    }
+
+    private func status(paired: Bool, here: Bool, elsewhere: [String]) -> LocalizedStringKey {
+        if !paired { return "Not paired with this Mac" }
+        if here { return "Connected" }
+        if !elsewhere.isEmpty { return "On \(elsewhere.joined(separator: ", "))" }
+        return "Not connected"
     }
 
     private var icon: String {
@@ -86,6 +115,48 @@ private struct DeviceCard: View {
         case .headphones: "headphones"
         case .speaker: "hifispeaker"
         case .other: "speaker.wave.2"
+        }
+    }
+}
+
+private struct NearbySection: View {
+    @ObservedObject var hub: Hub
+
+    var body: some View {
+        let joinable = hub.joinable
+        VStack(alignment: .leading, spacing: 8) {
+            if let joining = hub.joining {
+                if let code = joining.code {
+                    Text("Allow the join on \(joining.name). It must show the code:")
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text(verbatim: code)
+                        .font(.system(size: 28, weight: .semibold, design: .monospaced))
+                } else {
+                    HStack {
+                        ProgressView().controlSize(.small)
+                        Text("Connecting to \(joining.name)…")
+                    }
+                }
+            } else if !joinable.isEmpty {
+                Text("Macs nearby").bold()
+                ForEach(joinable, id: \.id) { found in
+                    HStack {
+                        Image(systemName: "laptopcomputer").foregroundStyle(.secondary)
+                        Text(verbatim: found.name).lineLimit(1)
+                        Spacer()
+                        Button("Join") { Task { await hub.join(found) } }
+                    }
+                }
+                Text("Join pulls this Mac into that Mac's network; you confirm a code there.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else if hub.peers.filter(\.reachable).count < 2 {
+                Text("To add another Mac, install BT Hub on it and press Join there.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
     }
 }
