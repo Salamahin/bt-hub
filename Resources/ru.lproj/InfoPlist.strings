@@ -1,0 +1,2 @@
+"NSBluetoothAlwaysUsageDescription" = "BT Hub подключает и отключает аудиоустройства на этом Mac.";
+"NSLocalNetworkUsageDescription" = "BT Hub находит другие ваши устройства в сети, чтобы переключать между ними аудиоустройства.";

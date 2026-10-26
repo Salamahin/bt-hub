@@ -1,0 +1,42 @@
+/* Panel */
+"No paired audio devices" = "Нет спаренных аудиоустройств";
+"Network is not set up — only this Mac's devices are shown" = "Сеть не настроена — видны только устройства этого Mac";
+"Online: %@" = "В сети: %@";
+"No connection: %@ (different key?)" = "Нет связи: %@ (другой ключ?)";
+"Settings…" = "Настройки…";
+"Quit" = "Выйти";
+"Disconnect" = "Отключить";
+"Connect" = "Подключить";
+"Move" = "Перенести";
+"Disconnect everywhere" = "Отключить везде";
+"This Mac" = "Этот Mac";
+
+/* Errors */
+"the device did not respond (code %@)" = "устройство не ответило (код %@)";
+"could not disconnect (code %@)" = "не удалось отключить (код %@)";
+"the device is not paired with this Mac" = "устройство не спарено с этим Mac";
+"the other device did not let go of it" = "другое устройство его не отпустило";
+"the peer left the network" = "устройство пропало из сети";
+"no connection to %@" = "нет связи с %@";
+"unknown error" = "неизвестная ошибка";
+"no device given" = "не указано устройство";
+"shutting down" = "выключается";
+"Could not open a network port: %@" = "Не удалось открыть сетевой порт: %@";
+
+/* Settings */
+"BT Hub Settings" = "BT Hub — настройки";
+"Name on the network" = "Имя в сети";
+"Launch at login" = "Запускать при входе в систему";
+"Hide" = "Скрыть";
+"Show" = "Показать";
+"Copy" = "Скопировать";
+"Create a new key…" = "Создать новый ключ…";
+"Create a key on the first Mac, then enter the same key on the others." = "Создайте ключ на первом Mac, а на остальных введите тот же ключ.";
+"Create a key" = "Создать ключ";
+"Key from another Mac" = "Ключ с другого Mac";
+"Use" = "Использовать";
+"Network key" = "Ключ сети";
+"Macs with the same key see each other's audio devices and can control them. Traffic between them is encrypted with this key; a device on the same network without it cannot connect." = "Маки с одинаковым ключом видят аудиоустройства друг друга и могут ими управлять. Трафик между ними зашифрован этим ключом; устройство в той же сети без ключа не подключится.";
+"Create a new key?" = "Создать новый ключ?";
+"Create" = "Создать";
+"Other Macs lose the connection to this one until the new key is entered on them." = "Остальные маки потеряют связь с этим, пока на них не введут новый ключ.";

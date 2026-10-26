@@ -1,0 +1,2 @@
+"NSBluetoothAlwaysUsageDescription" = "BT Hub connects and disconnects audio devices on this Mac.";
+"NSLocalNetworkUsageDescription" = "BT Hub finds your other devices on the network to move audio devices between them.";
