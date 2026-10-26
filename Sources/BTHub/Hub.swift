@@ -38,12 +38,14 @@ final class Hub: ObservableObject {
     @Published private(set) var lastError: String?
     @Published private(set) var networkKey: String?
     @Published private(set) var name: String
+    @Published private(set) var settings: SharedSettings
 
     let ownID: String
     private let bluetooth = Bluetooth()
     private var server: PeerServer?
     private var browser: PeerBrowser?
     private var timer: Timer?
+    private var reconciling = false
 
     init() {
         let defaults = UserDefaults.standard
@@ -55,6 +57,7 @@ final class Hub: ObservableObject {
         }
         name = defaults.string(forKey: "name") ?? Host.current().localizedName ?? "Mac"
         networkKey = Keychain.load()
+        settings = defaults.data(forKey: "sharedSettings").flatMap { try? JSONDecoder().decode(SharedSettings.self, from: $0) } ?? SharedSettings()
         peers = [Peer(id: ownID, name: name, isLocal: true, endpoint: nil, reachable: true, devices: [])]
 
         startNetwork()
@@ -95,16 +98,28 @@ final class Hub: ObservableObject {
         peers.first { $0.id == id }
     }
 
+    func isExclusive(_ address: String) -> Bool {
+        settings.isExclusive(address)
+    }
+
     // MARK: - Actions
 
     /// Connects the device to `target` alone: every other peer lets go of it first.
     func move(_ address: String, to target: String) async {
+        setOwner(address, target)
         await act(on: address) {
             let holders = self.holders(of: address).filter { $0 != target }
             for holder in holders {
                 try await self.call(holder, .disconnect(address), timeout: Self.statusTimeout)
             }
             if !holders.isEmpty { try await self.waitUntilReleased(address, by: holders) }
+            try await self.call(target, .connect(address), timeout: Self.connectTimeout)
+        }
+    }
+
+    /// Adds `target` without touching the other peers; for devices allowed on several at once.
+    func connect(_ address: String, to target: String) async {
+        await act(on: address) {
             try await self.call(target, .connect(address), timeout: Self.connectTimeout)
         }
     }
@@ -124,6 +139,13 @@ final class Hub: ObservableObject {
     }
 
     // MARK: - Settings
+
+    func setExclusive(_ address: String, _ exclusive: Bool) {
+        var updated = settings
+        if exclusive { updated.multipoint.remove(address) } else { updated.multipoint.insert(address) }
+        publish(updated)
+        if exclusive { Task { await reconcile() } }
+    }
 
     func useKey(_ key: String) {
         Keychain.save(key)
@@ -192,7 +214,7 @@ final class Hub: ObservableObject {
 
     /// Answers requests from other peers, and from this Mac's own menu.
     private nonisolated func handle(_ request: Request) async -> Response {
-        let me = await MainActor.run { PeerInfo(id: self.ownID, name: self.name) }
+        let (me, shared) = await MainActor.run { (PeerInfo(id: self.ownID, name: self.name), self.settings) }
         do {
             switch request.op {
             case .status:
@@ -204,7 +226,7 @@ final class Hub: ObservableObject {
                 guard let address = request.address else { return .failure(String(localized: "no device given")) }
                 try await bluetooth.disconnect(address)
             }
-            return Response(ok: true, peer: me, devices: await bluetooth.audioDevices())
+            return Response(ok: true, peer: me, devices: await bluetooth.audioDevices(), settings: shared)
         } catch {
             return .failure(error.localizedDescription)
         }
@@ -243,6 +265,55 @@ final class Hub: ObservableObject {
             return peer
         }
         if updated != peers { peers = updated }
+
+        for response in statuses.values.compactMap({ $0 }) {
+            if let remote = response.settings, remote.updatedAt > settings.updatedAt { adopt(remote) }
+        }
+        await reconcile()
+    }
+
+    /// Keeps every exclusive device on a single peer. Only the peer that should keep it acts,
+    /// so peers never fight over a device.
+    private func reconcile() async {
+        guard !reconciling else { return }
+        reconciling = true
+        defer { reconciling = false }
+        for device in devices where settings.isExclusive(device.address) && !busy.contains(device.address) {
+            let holders = device.connectedOn
+            if holders.count == 1 {
+                // Remember who had it alone, so that peer keeps it when another one grabs it too.
+                setOwner(device.address, holders[0])
+                continue
+            }
+            let owner = settings.owners[device.address]
+            guard Exclusivity.winner(holders: holders, owner: owner) == ownID else { continue }
+            for loser in Exclusivity.losers(holders: holders, owner: owner) {
+                do {
+                    try await call(loser, .disconnect(device.address), timeout: Self.statusTimeout)
+                } catch {
+                    log.error("could not take \(device.address, privacy: .public) from \(loser, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                }
+            }
+        }
+    }
+
+    private func setOwner(_ address: String, _ peerID: String) {
+        guard settings.owners[address] != peerID else { return }
+        var updated = settings
+        updated.owners[address] = peerID
+        publish(updated)
+    }
+
+    /// Records a local change; the new timestamp makes it win over the other peers' copies.
+    private func publish(_ new: SharedSettings) {
+        var stamped = new
+        stamped.updatedAt = Date().timeIntervalSince1970
+        adopt(stamped)
+    }
+
+    private func adopt(_ new: SharedSettings) {
+        settings = new
+        UserDefaults.standard.set(try? JSONEncoder().encode(new), forKey: "sharedSettings")
     }
 
     private func startNetwork() {

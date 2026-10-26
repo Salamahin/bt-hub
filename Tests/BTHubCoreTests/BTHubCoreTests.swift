@@ -83,3 +83,40 @@ import Testing
         #expect(Date().timeIntervalSince(started) < 4)
     }
 }
+
+@Suite struct ExclusivityTests {
+    @Test func ownerKeepsTheDevice() {
+        #expect(Exclusivity.winner(holders: ["a", "b"], owner: "b") == "b")
+        #expect(Exclusivity.losers(holders: ["a", "b"], owner: "b") == ["a"])
+    }
+
+    @Test func absentOwnerFallsBackToStablePick() {
+        #expect(Exclusivity.winner(holders: ["c", "a", "b"], owner: "z") == "a")
+        #expect(Exclusivity.winner(holders: ["b", "a"], owner: nil) == Exclusivity.winner(holders: ["a", "b"], owner: nil))
+    }
+
+    @Test func singleHolderLosesNothing() {
+        #expect(Exclusivity.losers(holders: ["a"], owner: nil).isEmpty)
+        #expect(Exclusivity.losers(holders: [], owner: "a").isEmpty)
+    }
+
+    @Test func newerSettingsWin() {
+        let old = SharedSettings(multipoint: ["X"], updatedAt: 1)
+        let new = SharedSettings(owners: ["X": "a"], updatedAt: 2)
+        #expect(old.merged(with: new) == new)
+        #expect(new.merged(with: old) == new)
+    }
+
+    @Test func devicesAreExclusiveByDefault() {
+        let settings = SharedSettings(multipoint: ["X"])
+        #expect(!settings.isExclusive("X"))
+        #expect(settings.isExclusive("Y"))
+    }
+
+    @Test func responseFromOlderPeerDecodes() throws {
+        let json = #"{"ok":true,"devices":[{"address":"A","name":"N","connected":false}]}"#
+        let response = try Frame.decode(Response.self, from: Data(json.utf8))
+        #expect(response.settings == nil)
+        #expect(response.devices?.first?.kind == nil)
+    }
+}

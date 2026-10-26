@@ -59,6 +59,14 @@ private struct DeviceCard: View {
                 Spacer()
                 if busy { ProgressView().controlSize(.small) }
             }
+            Toggle("Only one Mac at a time", isOn: Binding(
+                get: { hub.isExclusive(device.address) },
+                set: { hub.setExclusive(device.address, $0) }
+            ))
+            .toggleStyle(.switch)
+            .controlSize(.mini)
+            .font(.caption)
+            .foregroundStyle(.secondary)
             ForEach(hub.peers.filter(\.reachable)) { peer in
                 let connected = device.connectedOn.contains(peer.id)
                 HStack {
@@ -68,10 +76,12 @@ private struct DeviceCard: View {
                     Spacer()
                     if connected {
                         Button("Disconnect") { Task { await hub.disconnect(device.address, from: peer.id) } }
-                    } else {
+                    } else if hub.isExclusive(device.address) {
                         Button(device.connectedOn.isEmpty ? LocalizedStringKey("Connect") : LocalizedStringKey("Move")) {
                             Task { await hub.move(device.address, to: peer.id) }
                         }
+                    } else {
+                        Button("Connect") { Task { await hub.connect(device.address, to: peer.id) } }
                     }
                 }
                 .disabled(busy)

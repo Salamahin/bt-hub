@@ -55,12 +55,15 @@ public struct Response: Codable, Sendable, Equatable {
     public var error: String?
     public var peer: PeerInfo?
     public var devices: [DeviceState]?
+    /// Optional so peers on an older version still decode.
+    public var settings: SharedSettings?
 
-    public init(ok: Bool, error: String? = nil, peer: PeerInfo? = nil, devices: [DeviceState]? = nil) {
+    public init(ok: Bool, error: String? = nil, peer: PeerInfo? = nil, devices: [DeviceState]? = nil, settings: SharedSettings? = nil) {
         self.ok = ok
         self.error = error
         self.peer = peer
         self.devices = devices
+        self.settings = settings
     }
 
     public static func failure(_ message: String) -> Response { Response(ok: false, error: message) }
