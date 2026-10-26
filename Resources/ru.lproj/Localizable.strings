@@ -1,9 +1,7 @@
 /* Panel */
-"No paired audio devices" = "Нет спаренных аудиоустройств";
 "Settings…" = "Настройки…";
 "Quit" = "Выйти";
 "Disconnect" = "Отключить";
-"Connect" = "Подключить";
 "This Mac" = "Этот Mac";
 
 /* Errors */
@@ -47,19 +45,12 @@
 "Cancel" = "Отмена";
 
 /* Sections by Mac */
-"Not paired with this Mac" = "Не спарено с этим Mac";
-"Connected" = "Подключено";
-"On %@" = "Сейчас на: %@";
-"Not connected" = "Не подключено";
 "Move here" = "Перенести сюда";
 
 /* Joining */
-"Macs nearby" = "Маки поблизости";
 "Join" = "Подключиться";
-"Join pulls this Mac into that Mac's network; you confirm a code there." = "Этот Mac войдёт в сеть выбранного; там нужно будет подтвердить код.";
-"To add another Mac, install BT Hub on it and press Join there." = "Чтобы добавить другой Mac, установите на него BT Hub и нажмите там «Подключиться».";
-"Allow the join on %@. It must show the code:" = "Разрешите подключение на %@. Там должен быть этот код:";
-"Connecting to %@…" = "Подключение к %@…";
+"Nearby" = "Поблизости";
+"Confirm on %@" = "Подтвердите на %@";
 "%@ wants to join your BT Hub network" = "%@ хочет подключиться к вашей сети BT Hub";
 "Allow it only if %@ shows this code:" = "Разрешайте, только если на %@ показан этот код:";
 "Allow" = "Разрешить";
