@@ -23,8 +23,8 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
     <key>CFBundleDisplayName</key><string>BT Hub</string>
     <key>CFBundleExecutable</key><string>BTHub</string>
     <key>CFBundlePackageType</key><string>APPL</string>
-    <key>CFBundleShortVersionString</key><string>1.5.0</string>
-    <key>CFBundleVersion</key><string>7</string>
+    <key>CFBundleShortVersionString</key><string>1.5.1</string>
+    <key>CFBundleVersion</key><string>8</string>
     <key>LSMinimumSystemVersion</key><string>14.0</string>
     <key>LSUIElement</key><true/>
     <key>NSBluetoothAlwaysUsageDescription</key><string>BT Hub connects and disconnects audio devices on this Mac.</string>

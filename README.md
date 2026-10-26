@@ -11,7 +11,7 @@ disconnects them with one click.
   the same six-digit code; allow the join on the member and the network key travels over, encrypted (X25519 key
   agreement, the code rules out a man in the middle). The key can also be copied or shared as a link in Settings.
 - Members talk over TLS 1.2 with that pre-shared key: a device without it can neither read the traffic nor send
-  commands. The key lives in the login keychain.
+  commands. The key lives in `~/Library/Application Support/BT Hub/network-key`, readable only by your user.
 - English and Russian, following the system language.
 
 ## Install
@@ -22,8 +22,8 @@ brew services start bt-hub        # start now and at every login
 ```
 
 Install it on every Mac, then on each new one press **Join** next to a Mac that already runs it.
-macOS asks for Bluetooth and local network access on first launch (and again after an upgrade, since the app is
-signed locally).
+macOS asks for Bluetooth and local network access on first launch (Bluetooth again after an upgrade, since the
+app is signed locally).
 
 ## Build from source
 

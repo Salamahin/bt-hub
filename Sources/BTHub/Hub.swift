@@ -69,7 +69,7 @@ final class Hub: ObservableObject {
             defaults.set(ownID, forKey: "peerID")
         }
         name = defaults.string(forKey: "name") ?? Host.current().localizedName ?? "Mac"
-        networkKey = Keychain.load()
+        networkKey = KeyStore.load()
         settings = defaults.data(forKey: "sharedSettings").flatMap { try? JSONDecoder().decode(SharedSettings.self, from: $0) } ?? SharedSettings()
         peers = [Peer(id: ownID, name: name, isLocal: true, endpoint: nil, reachable: true, devices: [])]
 
@@ -185,7 +185,7 @@ final class Hub: ObservableObject {
     // MARK: - Settings
 
     func useKey(_ key: String) {
-        Keychain.save(key)
+        KeyStore.save(key)
         networkKey = key
         restartNetwork()
     }
